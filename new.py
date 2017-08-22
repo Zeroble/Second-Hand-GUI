@@ -13,6 +13,9 @@ import keyboard
 import time
 import sys
 
+stopped = 0
+shortShift = 0
+
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
@@ -54,7 +57,7 @@ class Ui_Dialog(object):
         _translate = QtCore.QCoreApplication.translate
         Dialog.setWindowTitle(_translate("Dialog", "Second Hand"))
         self.startButton.setText(_translate("Dialog", "시작"))
-        self.stopButton.setText(_translate("Dialog", "종료\n"))
+        self.stopButton.setText(_translate("Dialog", "종료"))
         self.resetButton.setText(_translate("Dialog", "리셋\n( ctrl + q )"))
         self.label.setText(_translate("Dialog", "c - ctrl + c"))
         self.label_2.setText(_translate("Dialog", "z - ctrl + z"))
@@ -75,12 +78,15 @@ class Ui_Dialog(object):
         self.myThread().start()
 
     def exit(self):
-        print("exit")
+        global stopped
+        stopped = 1
         sys.exit()
 
     class myThread(threading.Thread):  # threading.Thread 상속받음
         shortShift = 0
+
         def run(self):
+            global shortShift
             DELAY_TIME = 0.2
             mode = 0  # 0 = ja // 1 = mo imput
             savedKey = []
@@ -91,18 +97,32 @@ class Ui_Dialog(object):
 
 
             def key_pressed(key):
+                global stopped
+                global shortShift
                 print("ss : "+str(shortShift))
                 if eq(key, "space"):
-                    print("spaAaaaaaaaaaaaaaaaaaaace!!")
-                    for i in range(0, len(savedKey) + 1):
-                        keyboard.press_and_release("backspace")
+                    asdf = 0
                     for i in savedKey:
-                        keyboard.press_and_release(i)
+                        if not(i is 'shift' or i is "space"):
+                            keyboard.press_and_release("backspace")#지움
+                            print("del")
+                    keyboard.press_and_release("backspace")
+                    for i in savedKey:
+                        if asdf is 0:
+                            if not i is "shift":
+                                keyboard.press_and_release(i)
+                            else:
+                                asdf=1
+                        else:
+                            asdf = 0
+                            keyboard.press_and_release("shift+"+i)
+
                     for i in range(len(savedKey)):
                         savedKey.pop()
-                    keyboard.press_and_release("space")
                 if eq(key, "backspace"):
                     try:
+                        if savedKey[len(savedKey)-2] is "shift":
+                            savedKey.pop()
                         savedKey.pop()
                     except:
                         pass
@@ -111,18 +131,17 @@ class Ui_Dialog(object):
                     if shortShift is 1:
                         keyboard.press_and_release("backspace")
                         keyboard.press_and_release("shift+"+key)
+                        shortShift = 0
 
                     keyboard.press_and_release("space")
                     keyboard.press_and_release("backspace")
                 print(savedKey)
                 time.sleep(DELAY_TIME)
 
-            while 1:
-                    shortShift = 0
-                    while 1:
+            while not stopped:
+                try:
+                    while not stopped:
                         # try:
-                        if keyboard.is_pressed('ctrl+e'):  # exit
-                            sys.exit(1)
                         if keyboard.is_pressed('ctrl+q'):  # reset
                             break
 
@@ -300,6 +319,8 @@ class Ui_Dialog(object):
 
                         if keyboard.is_pressed("enter"):
                             pass
+                except:
+                    pass
 
 
 if __name__ == "__main__":
